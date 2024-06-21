@@ -45,3 +45,36 @@
         - name: 1-3 EXIT playbook
           fail:
             msg: "Stopping the playbook because the file download failed"
+
+- name: "2. Deploy file to servers"
+  hosts: target_svr
+  pre_tasks:
+    - name: Set current time variable
+      set_fact:
+        current_time: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+      no_log: true
+
+    - name: Set deploy directory variable
+      set_fact:
+        deploy_dir: "/data/deploy/ansible-deploy-{{ current_time }}"
+      no_log: true
+
+    - name: Display host name and IP address
+      debug:
+        msg: "Deploying on host: {{ inventory_hostname }}"
+
+    - name: Display deploy directory
+      debug:
+        msg: "Deployment directory is set to: {{ deploy_dir }}"
+
+  tasks:
+    - name: 2-1 Create the deploy directory
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: 2-2 Copy the file to the target server
+      copy:
+        src: "{{ downloaded_file }}"
+        dest: "{{ deploy_dir }}"
