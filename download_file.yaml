@@ -76,5 +76,5 @@
 
     - name: 2-2 Copy the file to the target server
       copy:
-        src: "{{ downloaded_file }}"
+        src: "{{ hostvars['localhost']['downloaded_file'] }}"
         dest: "{{ deploy_dir }}"
