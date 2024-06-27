@@ -1,8 +1,8 @@
 ---
-- name: service en gwemix version rollback
+- name: Service EN GWemix Version Rollback
   hosts: "{{ host }}"
   become: yes
-  become_user: "{{ ansible_user }}" 
+  become_user: "{{ ansible_user }}"
 
   vars:
     new_version_dir: "/data/wemix/new_version"
@@ -10,12 +10,12 @@
     download_url: "https://github.com/wemixarchive/go-wemix/releases/download/w0.10.7/gwemix-v0.10.7-linux-rocksdb.tar.gz"
 
   tasks:
-    - name: create directory
+    - name: Create directory
       file:
         path: "{{ new_version_dir }}"
         state: directory
 
-    - name: tar.gz download
+    - name: Download tar.gz file
       get_url:
         url: "{{ download_url }}"
         dest: "{{ new_version_dir }}/gwemix.tar.gz"
