@@ -1,5 +1,5 @@
 ---
-- name: [test] service en gwemix version rollback
+- name: service en gwemix version rollback
   hosts: "{{ host }}"
   become: yes
   become_user: "{{ ansible_user }}" 
