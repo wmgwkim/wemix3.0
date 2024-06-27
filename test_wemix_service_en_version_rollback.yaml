@@ -1,42 +1,46 @@
 ---
-- name: "Service EN GWemix Version Rollback"
+- name: service en gwemix version rollback
   hosts: "{{ host }}"
   become: yes
-  become_user: "{{ ansible_user }}"
+  become_user: "{{ ansible_user }}" 
 
   vars:
-    new_version_dir: "/data/wemix/new_version"
-    bin_dir: "/data/wemix/bin"
+    wemix_datadir_command: "ps -ef | grep wemix | awk '{ for(i=1; i<=NF; i++) { if ($i == \"--datadir\") { print $(i+1); } } }'"
     download_url: "https://github.com/wemixarchive/go-wemix/releases/download/w0.10.7/gwemix-v0.10.7-linux-rocksdb.tar.gz"
 
   tasks:
+    - name: wemix datadir path
+      shell: "{{ wemix_datadir_command }}"
+      register: datadir_path
+      changed_when: false
+
     - name: create directory
       file:
-        path: "{{ new_version_dir }}"
+        path: "{{ datadir_path.stdout }}/new_version"
         state: directory
+      when: datadir_path.stdout != ""
 
     - name: tar.gz download
       get_url:
         url: "{{ download_url }}"
-        dest: "{{ new_version_dir }}/gwemix.tar.gz"
+        dest: "{{ datadir_path.stdout }}/new_version/gwemix.tar.gz"
 
     - name: tar.gz extract
       unarchive:
-        src: "{{ new_version_dir }}/gwemix.tar.gz"
-        dest: "{{ new_version_dir }}/"
+        src: "{{ datadir_path.stdout }}/new_version/gwemix.tar.gz"
+        dest: "{{ datadir_path.stdout }}/new_version/"
         remote_src: yes
-        creates: "{{ new_version_dir }}/bin/"
+        creates: "{{ datadir_path.stdout }}/new_version/bin/"
 
     - name: backup old bin dir
-      command: rsync -a {{ bin_dir }}/ {{ bin_dir }}_old_backup/
+      command: rsync -a {{ datadir_path.stdout }}/bin/ {{ datadir_path.stdout }}/bin_old_backup/
       changed_when: false
 
     - name: replace new bin dir
-      command: rsync -a {{ new_version_dir }}/bin/ {{ bin_dir }}/
+      command: rsync -a {{ datadir_path.stdout }}/new_version/bin/ {{ datadir_path.stdout }}/bin/
       changed_when: true
 
     - name: gwemix restart service
-      command: "{{ bin_dir }}/gwemix.sh restart"
+      command: "{{ datadir_path.stdout }}/bin/gwemix.sh restart"
       async: 10
       poll: 2
-
