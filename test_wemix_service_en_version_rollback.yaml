@@ -1,5 +1,5 @@
 ---
-- name: Service EN GWemix Version Rollback
+- name: "Service EN GWemix Version Rollback"
   hosts: "{{ host }}"
   become: yes
   become_user: "{{ ansible_user }}"
