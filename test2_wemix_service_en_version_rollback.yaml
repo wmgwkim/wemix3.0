@@ -1,0 +1,26 @@
+---
+- name: service en gwemix version rollback
+  hosts: "{{ host }}"
+  become: yes
+  become_user: "{{ ansible_user }}" 
+
+  vars:
+    wemix_datadir_command: "ps -ef | grep wemix | awk '{ for(i=1; i<=NF; i++) { if ($i == \"--datadir\") { print $(i+1); } } }'"
+    download_url: "https://github.com/wemixarchive/go-wemix/releases/download/w0.10.7/gwemix-v0.10.7-linux-rocksdb.tar.gz"
+
+  tasks:
+    - name: wemix datadir path
+      shell: "{{ wemix_datadir_command }}"
+      register: datadir_path
+      changed_when: false
+
+    - name: create directory
+      file:
+        path: "{{ datadir_path.stdout }}/new_version"
+        state: directory
+      when: datadir_path.stdout != ""
+
+    - name: tar.gz download
+      get_url:
+        url: "{{ download_url }}"
+        dest: "{{ datadir_path.stdout }}/new_version/gwemix.tar.gz"
