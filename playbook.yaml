@@ -1,5 +1,5 @@
 ---
-- name: "1. Download the file"
+- name: "t1. Download the file"
   hosts: localhost
   vars:
     file_url: "{{ file_download_url }}"
