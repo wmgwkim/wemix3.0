@@ -49,7 +49,7 @@
 - name: "2. Deploy file to servers"
   hosts: target_svr
   vars:
-    file_download_dest: "{{ hostvars[inventory_hostname]['data_directory'] }}"
+    file_download_dest: "{{ data_directory }}"
   pre_tasks:
     - name: Set current time variable
       set_fact:
