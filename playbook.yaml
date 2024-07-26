@@ -48,8 +48,6 @@
 
 - name: "2. Deploy file to servers"
   hosts: target_svr
-  vars:
-    file_download_dest: "{{ data_directory }}"
   pre_tasks:
     - name: Set current time variable
       set_fact:
@@ -58,7 +56,7 @@
 
     - name: Set deploy directory variable
       set_fact:
-        deploy_dir: "{{ file_download_dest }}/deploy/ansible-deploy-{{ current_time }}"
+        deploy_dir: "{{ data_directory }}/deploy/ansible-deploy-{{ current_time }}"
       no_log: true
 
     - name: Display host name and IP address
