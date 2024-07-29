@@ -47,7 +47,7 @@
             msg: "Stopping the playbook because the file download failed"
 
 - name: "2. Deploy file to servers"
-  hosts: target_svr
+  hosts: "{{ host }}"
   pre_tasks:
     - name: Set current time variable
       set_fact:
