@@ -1,13 +1,17 @@
 ---
-- name: "1. Download the binary file on Jenkins Server"
+- name: "1. Download the file to the Jenkins server"
   hosts: localhost
   vars:
     file_url: "{{ file_download_url }}"
     file_dest: "{{ file_download_dest }}"
   tasks:
-    - name: Download the binary file
+    - name: Download the file
       block:
-        - name: "[1-1] Download the binary file"
+        - name: Download information
+          debug:
+            msg: "url={{ file_url }}    dest={{ file_dest }}"
+
+        - name: 1-1 Download the file
           get_url:
             url: "{{ file_url }}"
             dest: "{{ file_dest }}/{{ file_url.split('/')[-1] }}"
@@ -26,19 +30,46 @@
           shell: "md5sum {{ downloaded_file }} | awk '{ print $1 }'"
           register: md5_result
 
-        - name: "[1-2] Download completed"
+        - name: 1-2 Download completed
           debug:
-            msg: |
-              The binary file has been downloaded to the Jenkins server!
-              file={{ downloaded_file }}
-              size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB
-              MD5={{ md5_result.stdout }}
+            msg: "file={{ downloaded_file }}    size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB     MD5={{ md5_result.stdout }}"
 
       rescue:
-        - name: "ERROR found"
+        - name: ERROR found
           debug:
             msg: "Downloading file has an issue. Please check the config"
           
-        - name: "EXIT playbook"
+        - name: EXIT playbook
           fail:
             msg: "Stopping the playbook because the file download failed"
+
+- name: "2. Deploy the file from the Jenkins server to the target servers"
+  hosts: "{{ host }}"
+  pre_tasks:
+    - name: Set current time variable
+      set_fact:
+        current_time: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+    - name: Set deploy directory variable
+      set_fact:
+        deploy_dir: "{{ data_directory }}/deploy/jenkins-{{ current_time }}"
+
+    - name: Display host name and IP address
+      debug:
+        msg: "Deploying on host: {{ inventory_hostname }}"
+
+    - name: Display deploy directory
+      debug:
+        msg: "Deployment directory is set to: {{ deploy_dir }}"
+
+  tasks:
+    - name: 2-1 Create the deploy directory on target servers
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: 2-2 Copy the file to the target servers
+      copy:
+        src: "{{ hostvars['localhost']['downloaded_file'] }}"
+        dest: "{{ deploy_dir }}"
