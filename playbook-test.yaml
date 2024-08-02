@@ -7,7 +7,7 @@
   tasks:
     - name: Download the binary file
       block:
-        - name: [1-1] Download the binary file
+        - name: "[1-1] Download the binary file"
           get_url:
             url: "{{ file_url }}"
             dest: "{{ file_dest }}/{{ file_url.split('/')[-1] }}"
@@ -29,14 +29,14 @@
         - name: "[1-2] Download completed"
           debug:
             msg: |
-              The binary file has been downloaded to the Jenkins server! 
+              The binary file has been downloaded to the Jenkins server!
               file={{ downloaded_file }}    size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB     MD5={{ md5_result.stdout }}
 
       rescue:
-        - name: ERROR found
+        - name: "ERROR found"
           debug:
             msg: "Downloading file has an issue. Please check the config"
           
-        - name: EXIT playbook
+        - name: "EXIT playbook"
           fail:
             msg: "Stopping the playbook because the file download failed"
