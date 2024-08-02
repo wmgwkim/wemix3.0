@@ -26,11 +26,51 @@
           shell: "md5sum {{ downloaded_file }} | awk '{ print $1 }'"
           register: md5_result
 
+---
+- name: "1. Download the binary file on Jenkins Server"
+  hosts: localhost
+  vars:
+    file_url: "{{ file_download_url }}"
+    file_dest: "{{ file_download_dest }}"
+  tasks:
+    - name: Download the binary file
+      block:
+        - name: "[1-1] Download the binary file"
+          get_url:
+            url: "{{ file_url }}"
+            dest: "{{ file_dest }}/{{ file_url.split('/')[-1] }}"
+          register: download_result
+
+        - name: Set download result as a global fact
+          set_fact:
+            downloaded_file: "{{ download_result.dest }}"
+
+        - name: Get file stats
+          stat:
+            path: "{{ downloaded_file }}"
+          register: file_info
+
+        - name: Calculate MD5 checksum
+          shell: "md5sum {{ downloaded_file }} | awk '{ print $1 }'"
+          register: md5_result
+
         - name: "[1-2] Download completed"
           debug:
             msg: |
               The binary file has been downloaded to the Jenkins server!
-              file={{ downloaded_file }}    size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB     MD5={{ md5_result.stdout }}
+              file={{ downloaded_file }}
+              size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB
+              MD5={{ md5_result.stdout }}
+
+      rescue:
+        - name: "ERROR found"
+          debug:
+            msg: "Downloading file has an issue. Please check the config"
+          
+        - name: "EXIT playbook"
+          fail:
+            msg: "Stopping the playbook because the file download failed"
+
 
       rescue:
         - name: "ERROR found"
