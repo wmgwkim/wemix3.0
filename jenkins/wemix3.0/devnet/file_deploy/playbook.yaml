@@ -1,5 +1,5 @@
 ---
-- name: "1. Download the file"
+- name: "1. Download the file to the Jenkins server"
   hosts: localhost
   vars:
     file_url: "{{ file_download_url }}"
@@ -20,44 +20,39 @@
         - name: Set download result as a global fact
           set_fact:
             downloaded_file: "{{ download_result.dest }}"
-            cacheable: true
 
         - name: Get file stats
           stat:
             path: "{{ downloaded_file }}"
           register: file_info
-          no_log: true
 
         - name: Calculate MD5 checksum
           shell: "md5sum {{ downloaded_file }} | awk '{ print $1 }'"
           register: md5_result
-          no_log: true
 
         - name: 1-2 Download completed
           debug:
             msg: "file={{ downloaded_file }}    size={{ (file_info.stat.size / 1024 / 1024) | round(2) }}MB     MD5={{ md5_result.stdout }}"
 
       rescue:
-        - name: 1-2 ERROR found
+        - name: ERROR found
           debug:
             msg: "Downloading file has an issue. Please check the config"
           
-        - name: 1-3 EXIT playbook
+        - name: EXIT playbook
           fail:
             msg: "Stopping the playbook because the file download failed"
 
-- name: "2. Deploy file to servers"
+- name: "2. Deploy the file from the Jenkins server to the target servers"
   hosts: "{{ host }}"
   pre_tasks:
     - name: Set current time variable
       set_fact:
         current_time: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
-      no_log: true
 
     - name: Set deploy directory variable
       set_fact:
-        deploy_dir: "{{ data_directory }}/deploy/ansible-deploy-{{ current_time }}"
-      no_log: true
+        deploy_dir: "{{ data_directory }}/deploy/jenkins-{{ current_time }}"
 
     - name: Display host name and IP address
       debug:
@@ -68,13 +63,13 @@
         msg: "Deployment directory is set to: {{ deploy_dir }}"
 
   tasks:
-    - name: 2-1 Create the deploy directory
+    - name: 2-1 Create the deploy directory on target servers
       file:
         path: "{{ deploy_dir }}"
         state: directory
         mode: '0755'
 
-    - name: 2-2 Copy the file to the target server
+    - name: 2-2 Copy the file to the target servers
       copy:
         src: "{{ hostvars['localhost']['downloaded_file'] }}"
         dest: "{{ deploy_dir }}"
