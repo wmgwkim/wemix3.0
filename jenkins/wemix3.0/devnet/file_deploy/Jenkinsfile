@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+    
+    options {
+        ansiColor('xterm')
+    }
+    
+    environment {
+        // ANSIBLE 
+        ANSIBLE_INVENTORY_NAME = '/etc/ansible/hosts'
+        ANSIBLE_PLAYBOOK_NAME = 'jenkins/wemix3.0/devnet/file_deploy/playbook.yaml'
+        ANSIBLE_EXTRA_VARS_HOST = 'WEMIX3.0_DEVNET'
+        
+        // REPOSITORY 
+        REPOSITORY_URL = 'https://github.com/wmgwkim/wemix3.0.git'
+        
+        // JENKINS
+        JENKINS_WORKSPACE = "${env.WORKSPACE}"
+    }
+
+    parameters {
+        string(name: 'FILE_DOWNLOAD_URL', description: 'The full URL of a file to download')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the repository
+                echo "\033[34m Cloning the repository \033[0m"
+                git branch: 'main', url: "${REPOSITORY_URL}"
+            }
+        }
+        stage('Review ansible configuration') {
+            steps {
+                
+                // Display the download URL
+                echo "\033[34m Reviewing download url \033[0m"
+                echo "Download URL: ${params.FILE_DOWNLOAD_URL}"
+                
+                // Display the contents of inventory
+                echo "\033[34m Reviewing inventory \033[0m"
+                sh "bash /etc/ansible/search_group.sh ${ANSIBLE_EXTRA_VARS_HOST}"
+                
+                // Display the contents of the playbook
+                echo "\033[34m Reviewing playbook \033[0m"
+                sh "cat ${ANSIBLE_PLAYBOOK_NAME}"       
+                
+            }
+        }
+        stage('Confirmation') {
+            steps {
+                // Add a confirmation step
+                script {
+                    input(id: 'userInput', message: 'Do you want to proceed with running the Ansible playbook?')
+                }
+            }
+        }
+        stage('Run Ansible Playbook') {
+            steps {            
+                // Use the credentials for Ansible playbook
+                echo "\033[34m Running Ansible playbook \033[0m"
+                sh """
+                    ansible-playbook \
+                    -i "${ANSIBLE_INVENTORY_NAME}" \
+                    "${ANSIBLE_PLAYBOOK_NAME}" \
+                    --extra-vars "host=${ANSIBLE_EXTRA_VARS_HOST} file_download_url=${FILE_DOWNLOAD_URL} file_download_dest=${JENKINS_WORKSPACE}"
+                """
+            }
+        }
+    }
+}
